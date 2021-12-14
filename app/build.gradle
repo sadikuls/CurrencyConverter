@@ -15,7 +15,7 @@ android {
         targetSdkVersion 29
         versionCode 1
         versionName "1.0"
-
+        buildConfigField("String", "API_KEY", API_KEY)
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -39,13 +39,13 @@ android {
         create("dev"){
             dimension = "api"
             applicationIdSuffix ".dev"
-            buildConfigField "String", BASE_URL, '"http://apilayer.net/"'
+            buildConfigField "String", BASE_URL, '"http://apilayer.net/api/"'
         }
         // this verion is for release
         create("pro"){
             dimension = "api"
             applicationIdSuffix ".pro"
-            buildConfigField "String", BASE_URL, '"http://apilayer.net/"'
+            buildConfigField "String", BASE_URL, '"http://apilayer.net/api/"'
         }
     }
 

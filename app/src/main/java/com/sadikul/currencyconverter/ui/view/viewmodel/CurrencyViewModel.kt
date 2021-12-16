@@ -1,29 +1,30 @@
 package com.sadikul.currencyconverter.ui.view.viewmodel
 
-import androidx.hilt.lifecycle.ViewModelInject
+import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.sadikul.currencyconverter.data.local.entity.CurrencyEntity
-import com.sadikul.currencyconverter.data.model.CurrencyResponse
 import com.sadikul.currencyconverter.data.repository.CurrencyRepo
 import com.sadikul.currencyconverter.utils.Resource
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
-class CurrencyViewModel @ViewModelInject constructor(private val repo: CurrencyRepo): ViewModel() {
+@HiltViewModel
+class CurrencyViewModel @Inject constructor(private val repo: CurrencyRepo): ViewModel() {
     private val TAG = CurrencyViewModel::class.java.simpleName
-    private val currencyMutableLiveData = MutableLiveData<Resource<List<CurrencyEntity>>>()
-    val data: LiveData<Resource<List<CurrencyEntity>>>
+    private val currencyMutableLiveData = MutableLiveData<Resource<MutableMap<String,Double>>>()
+    val data: LiveData<Resource<MutableMap<String,Double>>>
         get() = currencyMutableLiveData
 
-    fun getDataFromSever(
-        access_key: String,
+    fun getData(
         source: String,
         value: String) {
         viewModelScope.launch {
-            repo.getDataFromServer(
-                access_key,
+            Log.d(TAG,"Networking getting data getDataFromSever source $source value $value")
+            repo.getData(
                 source,
                 value,
                 currencyMutableLiveData

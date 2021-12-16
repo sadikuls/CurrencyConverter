@@ -13,8 +13,10 @@
         app:layout_constraintRight_toRightOf="parent"
         android:id="@+id/tvCurrencyValue"
         android:layout_width="match_parent"
-        android:textSize="20sp"
+        android:textSize="12sp"
         android:text="24"
+        android:textStyle="bold"
+        android:textColor="@color/colorAccent"
         android:gravity="center_horizontal"
         android:layout_height="wrap_content"/>
     <TextView
@@ -24,6 +26,7 @@
         app:layout_constraintRight_toRightOf="parent"
         android:textSize="20sp"
         android:text="BDT"
+        android:textColor="#212121"
         android:gravity="center_horizontal"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"/>

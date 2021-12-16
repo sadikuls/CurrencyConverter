@@ -28,7 +28,7 @@
         android:layout_marginRight="10dp"
         android:background="@drawable/bg_btn_currency"
         android:layout_height="50dp">
-        <TextView
+<!--        <TextView
             android:layout_width="0dp"
             android:layout_weight="1"
             android:layout_gravity="right"
@@ -39,7 +39,11 @@
             android:layout_width="wrap_content"
             android:src="@drawable/arrow_down"
             android:layout_gravity="center"
-            android:layout_height="match_parent"/>
+            android:layout_height="match_parent"/>-->
+        <Spinner
+            android:id="@+id/spinnerCurrency"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
     </LinearLayout>
     <LinearLayout
         android:id="@+id/homeMainLayout"

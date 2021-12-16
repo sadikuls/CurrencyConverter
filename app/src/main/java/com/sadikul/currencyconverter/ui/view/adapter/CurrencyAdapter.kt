@@ -31,8 +31,8 @@ class CurrencyAdapter(
 
         fun bind(currencyItem: CurrencyEntity) {
             _binding.apply {
-                tvCurrency.text = currencyItem.currency_name
-                tvCurrencyValue.text = currencyItem.currency_value.toString()
+                tvCurrency.text = currencyItem.currency
+                tvCurrencyValue.text = currencyItem.value.toString()
                 //Log.d("GalleryAdapter",imageUrl)
             }
         }

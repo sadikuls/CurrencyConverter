@@ -11,14 +11,17 @@ import kotlinx.android.parcel.Parcelize
 @Parcelize
 @Entity(tableName = "currency")
 data class CurrencyEntity(
-    @Nullable
-    @ColumnInfo(name = "currency_name")
-    val currency_name: String? = null,
+    @PrimaryKey
+    @ColumnInfo(name = "id")
+    @NonNull
+    val id: Int,
 
     @Nullable
-    @ColumnInfo(name = "currency_value")
-    val currency_value: Int? = null,
+    @ColumnInfo(name = "currency")
+    val currency: String? = null,
 
-    @PrimaryKey(autoGenerate = true)
-    val id: Int
+    @Nullable
+    @ColumnInfo(name = "value")
+    val value: Double? = null,
+
 ) : Parcelable

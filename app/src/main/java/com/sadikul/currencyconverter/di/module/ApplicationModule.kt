@@ -2,9 +2,7 @@ package com.sadikul.currencyconverter.di.module
 
 import android.content.Context
 import android.util.Log
-import com.pactice.hild_mvvm_room.dada.api.ApiHelper
-import com.pactice.hild_mvvm_room.dada.api.ApiHelperImpl
-import com.pactice.hild_mvvm_room.dada.api.ApiService
+import com.pactice.hild_mvvm_room.dada.api.CurrencyApi
 import com.sadikul.currencyconverter.BuildConfig
 import com.sadikul.currencyconverter.data.local.LocalDatabase
 import com.sadikul.currencyconverter.utils.Constants
@@ -12,8 +10,8 @@ import com.sadikul.currencyconverter.utils.PreferenceManager
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
-import dagger.hilt.android.components.ApplicationComponent
 import dagger.hilt.android.qualifiers.ApplicationContext
+import dagger.hilt.components.SingletonComponent
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
@@ -22,12 +20,15 @@ import java.util.concurrent.TimeUnit
 import javax.inject.Singleton
 
 @Module
-@InstallIn(ApplicationComponent::class)
+@InstallIn(SingletonComponent::class)
 internal class ApplicationModule {
     private val TAG = ApplicationModule::class.java.simpleName
 
     @Provides
     fun provideBaseUrl() = BuildConfig.BASE_URL
+/*
+    @Provides
+    fun provideApiKeY() = BuildConfig.API_KEY*/
 
     @Provides
     fun provideTimeOutLimit() = Constants.TIME_OUT_LIMIT
@@ -70,11 +71,7 @@ internal class ApplicationModule {
 
     @Provides
     @Singleton
-    fun provideApiHelper(apiHelper: ApiHelperImpl): ApiHelper = apiHelper
-
-    @Provides
-    @Singleton
-    fun provideApiService(retrofit: Retrofit): ApiService = retrofit.create(ApiService::class.java)
+    fun provideCurrencyApi(retrofit: Retrofit): CurrencyApi = retrofit.create(CurrencyApi::class.java)
 
     @Provides
     @Singleton

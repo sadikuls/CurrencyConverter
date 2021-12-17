@@ -8,6 +8,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.snackbar.Snackbar
 import com.sadikul.currencyconverter.data.local.entity.CurrencyEntity
 import com.sadikul.currencyconverter.databinding.ItemGridLayoutBinding
+import com.sadikul.currencyconverter.utils.Utill
 
 
 class CurrencyAdapter(
@@ -32,7 +33,9 @@ class CurrencyAdapter(
         fun bind(currencyItem: CurrencyEntity) {
             _binding.apply {
                 tvCurrency.text = currencyItem.currency
-                tvCurrencyValue.text = currencyItem.value.toString()
+                tvCurrencyValue.text = currencyItem.value?.let {
+                    Utill.roundOffDecimal(it)
+                }.toString()
                 //Log.d("GalleryAdapter",imageUrl)
             }
         }

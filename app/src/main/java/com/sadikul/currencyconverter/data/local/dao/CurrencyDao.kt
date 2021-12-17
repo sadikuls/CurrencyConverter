@@ -16,11 +16,4 @@ interface CurrencyDao{
 
     @Query("delete from currency")
     suspend fun clearAll()
-
-/*    @Query("select * from currency where currency_to like :value")
-    suspend fun getByCurrency(value: String)*/
-
-/*
-    @Query("select currencyTo from currency")
-    suspend fun getAllCurrency()*/
 }

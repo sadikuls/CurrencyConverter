@@ -2,11 +2,16 @@ package com.sadikul.currencyconverter.di.module
 
 import android.content.Context
 import android.util.Log
+import androidx.work.*
 import com.pactice.hild_mvvm_room.dada.api.CurrencyApi
 import com.sadikul.currencyconverter.BuildConfig
 import com.sadikul.currencyconverter.data.local.LocalDatabase
 import com.sadikul.currencyconverter.utils.Constants
+import com.sadikul.currencyconverter.utils.Constants.PERIODIC_WORK_INITIAL_DELAY
+import com.sadikul.currencyconverter.utils.Constants.PERIODIC_WORK_INTERVAL
+import com.sadikul.currencyconverter.utils.Constants.PERIODIC_WORK_TAG
 import com.sadikul.currencyconverter.utils.PreferenceManager
+import com.sadikul.currencyconverter.worker.CurrencyDataWorker
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -76,4 +81,23 @@ internal class ApplicationModule {
     @Provides
     @Singleton
     fun provideAppDatabase(@ApplicationContext appContext: Context) = LocalDatabase.getInstance(context = appContext)
+
+    @Provides
+    fun provideWorkRequest(): PeriodicWorkRequest{
+        val constraints =
+        return PeriodicWorkRequestBuilder<CurrencyDataWorker>(PERIODIC_WORK_INTERVAL, TimeUnit.MINUTES)
+            .setConstraints(
+                Constraints.Builder()
+                .setRequiredNetworkType(NetworkType.CONNECTED)
+                .setRequiresStorageNotLow(true)
+                .setRequiresBatteryNotLow(true)
+                .build())
+            .setInitialDelay(PERIODIC_WORK_INITIAL_DELAY,TimeUnit.SECONDS)
+            .addTag(PERIODIC_WORK_TAG)
+            .build()
+    }
+
+    @Provides
+    @Singleton
+    fun provideWorkManager(@ApplicationContext appContext: Context): WorkManager = WorkManager.getInstance(appContext)
 }

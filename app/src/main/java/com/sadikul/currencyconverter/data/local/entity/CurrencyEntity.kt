@@ -24,4 +24,8 @@ data class CurrencyEntity(
     @ColumnInfo(name = "value")
     val value: Double? = null,
 
+    @Nullable
+    @ColumnInfo(name = "time")
+    val time: Long? = null,
+
 ) : Parcelable

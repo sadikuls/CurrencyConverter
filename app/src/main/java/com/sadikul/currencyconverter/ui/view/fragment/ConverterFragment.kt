@@ -1,12 +1,18 @@
 package com.sadikul.currencyconverter.ui.view.fragment
 
 import android.os.Bundle
+import android.text.Editable
+import android.text.TextWatcher
 import android.util.Log
 import android.view.LayoutInflater
+import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
+import android.widget.AdapterView
+import android.widget.AdapterView.OnItemSelectedListener
 import android.widget.ArrayAdapter
 import android.widget.Toast
+import androidx.core.widget.doOnTextChanged
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Observer
@@ -18,10 +24,12 @@ import com.sadikul.currencyconverter.databinding.FragmentConverterBinding
 import com.sadikul.currencyconverter.ui.view.adapter.CurrencyAdapter
 import com.sadikul.currencyconverter.ui.view.viewmodel.CurrencyViewModel
 import com.sadikul.currencyconverter.utils.Status
-import com.sadikul.currencyconverter.worker.ServerDataReceiver
+import com.sadikul.currencyconverter.utils.Utill
+import com.sadikul.currencyconverter.worker.CurrencyDataWorker
 import dagger.hilt.android.AndroidEntryPoint
 import java.util.*
 import java.util.concurrent.TimeUnit
+import javax.inject.Inject
 
 
 @AndroidEntryPoint
@@ -31,32 +39,42 @@ class ConverterFragment : Fragment() {
     private lateinit var _binding: FragmentConverterBinding
     private val TAG = ConverterFragment::class.java.simpleName
     private lateinit var currencyAdapter: CurrencyAdapter
-    private val constraints = Constraints.Builder()
-        .setRequiredNetworkType(NetworkType.CONNECTED)
-        .setRequiresStorageNotLow(true)
-        .setRequiresBatteryNotLow(true)
-        .build()
-    private val workManager by lazy {
-        WorkManager.getInstance(activity?.applicationContext!!)
-    }
+    private var selectedCurrency = "USD"
 
+    private var isSpinnerHasSet: Boolean = false
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         _binding = FragmentConverterBinding.bind(view)
-        currencyViewModel.getData("USDUSD", "1")
-        _binding.llSelectCurrency.setOnClickListener({
-            currencyViewModel.getData("USDBDT", "150")
-        })
+        _binding.textfieldCurrencyInput.text = Editable.Factory.getInstance().newEditable("1")
+        Utill.hideKeyboard(requireContext(),view)
+        observeTextChange()
+        currencyViewModel.getData(selectedCurrency, "1")
         setupObserver()
         setupRecyclerView()
-        createPeriodicWorkRequest()
+    }
+
+    private fun observeTextChange() {
+        _binding.textfieldCurrencyInput.addTextChangedListener(object : TextWatcher {
+            override fun afterTextChanged(s: Editable?) {
+                if (s?.length!! > 0) {
+                    currencyViewModel.getData(selectedCurrency, s.toString())
+                }
+            }
+
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {
+            }
+
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+            }
+        })
     }
 
     private fun setupSpinner(list: MutableMap<String, Double>) {
-// Create an ArrayAdapter using the string array and a default spinner layout
+        Log.d(TAG, " currency-app setupSpinner Setting up spinner")
+        isSpinnerHasSet = true
         var names = mutableListOf<String>()
         list.forEach({
-            names.add(it.key.substring(3))
+            names.add(it.key)
         })
         val adapter = activity?.let {
             ArrayAdapter<String>(
@@ -67,15 +85,34 @@ class ConverterFragment : Fragment() {
         }
 
         _binding.spinnerCurrency.adapter = adapter
-/*        ArrayAdapter<String>(
-                this,
-                android.R.layout.simple_spinner_item, names
-            ).also { adapter ->
-            // Specify the layout to use when the list of choices appears
-            adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-            // Apply the adapter to the spinner
-            _binding.spinnerCurrency.adapter = adapter
-        }*/
+        _binding.spinnerCurrency.setSelection(names.indexOf("USD"))
+        _binding.spinnerCurrency.setOnItemSelectedListener(object : OnItemSelectedListener {
+            override fun onItemSelected(
+                parentView: AdapterView<*>?,
+                selectedItemView: View,
+                position: Int,
+                id: Long
+            ) {
+                //if(position != names.indexOf("USD")){
+                selectedCurrency = names.get(position)
+                currencyViewModel.getData(selectedCurrency, _binding.textfieldCurrencyInput.text.toString())
+                //}
+            }
+
+            override fun onNothingSelected(parentView: AdapterView<*>?) {
+                // your code here
+            }
+        })
+
+        _binding.spinnerCurrency.setOnTouchListener(object : View.OnTouchListener{
+            override fun onTouch(p0: View?, p1: MotionEvent?): Boolean {
+                view?.let{
+                    Utill.hideKeyboard(requireContext(),it)
+                }
+                return false
+            }
+
+        })
     }
 
     private fun setupObserver() {
@@ -83,21 +120,25 @@ class ConverterFragment : Fragment() {
         currencyViewModel.data.observe(viewLifecycleOwner, Observer {
             when (it.status) {
                 Status.SUCCESS -> {
+                    hideLoader(true)
                     it.data?.let { list ->
                         updateList(list)
-                        setupSpinner(list)
+                        if(!isSpinnerHasSet) {
+                            setupSpinner(list)
+                        }
                     }
                 }
 
                 Status.LOADING -> {
-                    //showLoader()
+                    showLoader()
                     //Toast.makeText(context, it.message, Toast.LENGTH_LONG).show()
                     Log.d(TAG, "currency-app loading started")
                 }
 
                 Status.ERROR -> {
-                    //hideLoader(false)
-                    //Toast.makeText(context, it.message, Toast.LENGTH_LONG).show()
+                    hideLoader(false)
+                    Toast.makeText(requireContext(), it?.message, Toast.LENGTH_LONG)
+                    .show()
                     Log.d(TAG, "currency-app got error")
                 }
             }
@@ -138,33 +179,58 @@ class ConverterFragment : Fragment() {
         currencyAdapter.notifyDataSetChanged()
     }
 
+/*
     private fun createPeriodicWorkRequest() {
-        val currencyDataReceiver = PeriodicWorkRequestBuilder<ServerDataReceiver>(
-            15, TimeUnit.MINUTES
-        )
-            .setConstraints(constraints)
+        val currencyWorkRequest = PeriodicWorkRequestBuilder<CurrencyDataWorker>(30, TimeUnit.MINUTES)
+            .setConstraints(
+                Constraints.Builder()
+                    .setRequiredNetworkType(NetworkType.CONNECTED)
+                    .setRequiresStorageNotLow(true)
+                    .setRequiresBatteryNotLow(true)
+                    .build())
             .addTag("currencyDataWork")
             .build()
 
         workManager.enqueueUniquePeriodicWork(
             "preodicCurrencyData",
             ExistingPeriodicWorkPolicy.KEEP,
-            currencyDataReceiver
+            PeriodicWorkRequestBuilder<CurrencyDataWorker>(30, TimeUnit.MINUTES)
+                .setConstraints(
+                    Constraints.Builder()
+                        .setRequiredNetworkType(NetworkType.CONNECTED)
+                        .setRequiresStorageNotLow(true)
+                        .setRequiresBatteryNotLow(true)
+                        .build())
+                .addTag("currencyDataWork")
+                .build()
         )
-        observeWork(currencyDataReceiver.id)
+        observeWork(currencyWorkRequest.id)
     }
+*/
 
+/*
     private fun observeWork(id: UUID) {
-        // 1
         workManager.getWorkInfoByIdLiveData(id)
             .observe(viewLifecycleOwner, { info ->
                 // 2
                 if (info != null && info.state.isFinished) {
                     //hideLottieAnimation()
-                    Toast.makeText(requireContext(), "Got data by workmanager", Toast.LENGTH_LONG)
+                    Toast.makeText(requireContext(), "Currency data is updated", Toast.LENGTH_LONG)
                         .show()
 
                 }
             })
+    }
+*/
+
+
+    private fun showLoader() = _binding?.apply {
+        progrssBar.visibility = View.VISIBLE
+        //_binding.recyclerView.visibility = View.GONE
+    }
+
+    private fun hideLoader(showRecyclerview: Boolean) = _binding?.apply {
+        progrssBar.visibility = View.GONE
+        //_binding.recyclerView.visibility = if (showRecyclerview) View.VISIBLE else View.GONE
     }
 }

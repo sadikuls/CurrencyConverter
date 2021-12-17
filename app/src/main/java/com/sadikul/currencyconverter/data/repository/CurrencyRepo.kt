@@ -1,6 +1,7 @@
 package com.sadikul.currencyconverter.data.repository
 
 import android.util.Log
+import android.widget.Toast
 import androidx.lifecycle.MutableLiveData
 import com.pactice.hild_mvvm_room.dada.api.CurrencyApi
 import com.sadikul.currencyconverter.BuildConfig
@@ -9,6 +10,7 @@ import com.sadikul.currencyconverter.data.local.entity.CurrencyEntity
 import com.sadikul.currencyconverter.data.model.CurrencyResponse
 import com.sadikul.currencyconverter.utils.NetworkHelper
 import com.sadikul.currencyconverter.utils.Resource
+import com.sadikul.currencyconverter.utils.Utill
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -30,6 +32,7 @@ class CurrencyRepo @Inject constructor(
         value: String,
         currencyMutableLiveData: MutableLiveData<Resource<MutableMap<String,Double>>>
     ){
+        currencyMutableLiveData.postValue(Resource.loading(null))
         var dataFromLocal = appDatabase.currencyDao().getAll()
 
         if(dataFromLocal.size == 0){
@@ -37,7 +40,21 @@ class CurrencyRepo @Inject constructor(
             getDataFromServer(source, value, currencyMutableLiveData)
         }else{
             Log.e(TAG,"Networking getData() Shoiwng local data")
-            currencyMutableLiveData.postValue(Resource.success("data from local-db",convertCurrency(source, value.toInt() ,convertToMap(dataFromLocal))))
+            convertToMap(dataFromLocal).let {
+                try {
+                    val inputValue = value.toDouble()
+                    currencyMutableLiveData.postValue(Resource.success("data from local-db",convertCurrency(source, inputValue ,it)))
+                }catch (ex: Exception){
+                    Log.e(TAG,"Networking getData() error cause : ${ex.cause} message ${ex.message}")
+                    var errMessage = "Something went wrong."
+                    ex.message?.let{
+                        if(it.contains("For input string")){
+                            errMessage = "Could not convert."
+                        }
+                    }
+                    currencyMutableLiveData.postValue(Resource.error(errMessage,null))
+                }
+            }
         }
     }
 
@@ -46,16 +63,27 @@ class CurrencyRepo @Inject constructor(
         if(networkHelper.isNetworkConnected()){
             val serverResponse = currencyApi.getData(
                 BuildConfig.API_KEY,
-                source.substring(3),
+                source,
                 defaultValue.toString()
             )
             if(serverResponse.isSuccessful){
-                val data = processServerData(serverResponse.body()!!)
+                //val data = processServerData(serverResponse.body()!!)
+                val data = Utill.processServerData(serverResponse.body()!!)
                 data.let {
-                    val map = convertToMap(it)
-                    Log.i(TAG,"map size ${map.size}")
-                    currencyMutableLiveData.postValue(Resource.success("Response received",convertCurrency(source,value.toInt(),map)))
-                    insertIntoDb(it)
+                    if(it.size > 0){
+                        val map = convertToMap(it)
+                        Log.i(TAG,"map size ${map.size}")
+                        map.let {
+                            try{
+                                currencyMutableLiveData.postValue(Resource.success("Response received",convertCurrency(source,value.toDouble(),it)))
+                            }catch(ex: Exception){
+                                currencyMutableLiveData.postValue(Resource.error("Something went wrong",null))
+                            }
+                        }
+                        Utill.insertIntoDb(appDatabase, it)
+                        appDatabase.currencyDao().clearAll()
+                        appDatabase.currencyDao().insertAll(it)
+                    }
                 }
             }else{
                 currencyMutableLiveData.postValue(Resource.error("Error",null))
@@ -63,6 +91,7 @@ class CurrencyRepo @Inject constructor(
         }
     }
 
+/*
     private fun processServerData(response: CurrencyResponse): List<CurrencyEntity> {
         Log.d(TAG,"Networking getData() Processing data")
         val list = mutableListOf<CurrencyEntity>()
@@ -73,20 +102,26 @@ class CurrencyRepo @Inject constructor(
                 data.apply {
                     val item = CurrencyEntity(
                         id,
-                        data.key,
+                        data.key.substring(3),
                         data.value
                     )
                     list.add(item)
                 }
+                list.add(CurrencyEntity(++id,"USD",1.0))
             }
         }
         return list
     }
+*/
 
     private fun convertToMap(list: List<CurrencyEntity>): MutableMap<String,Double>{
         val map = mutableMapOf<String,Double>()
         for (item in list) {
-            Log.i(TAG,"convertToMap key ${item.currency} value ${item.value}")
+            Log.i(TAG,"convertToMap id $item.id" +
+                    "key ${item.currency} value ${item.value}}")
+            item.time?.let {
+                Log.i(TAG,"convertToMap ${Utill.convertMillsToTime(it)}}")
+            }
             map.put(item.currency!!, item.value!!)
         }
         return map
@@ -94,58 +129,25 @@ class CurrencyRepo @Inject constructor(
 
     private fun convertCurrency(
         source: String,
-        value: Int,
+        value: Double,
         currencyMap: MutableMap<String,Double>
     ): MutableMap<String,Double>{
-        Log.e(TAG,"currency conversion : source $source usdValueOfCurrency value $value")
+
         val list = mutableMapOf<String,Double>()
-        currencyMap.get(source)?.let{
-
+        Log.e(TAG,"currency conversion : source $source usdValueOfCurrency value $value currencyMap size ${currencyMap.size}")
+        if(currencyMap.size > 0){
+            val sourceCurrencyValue = currencyMap.get(source)!!
+            val usdValueOfCurrency = value/sourceCurrencyValue
+            Log.e(TAG,"currency conversion : sourceCurrencyValue $sourceCurrencyValue usdValueOfCurrency $usdValueOfCurrency")
+            currencyMap.forEach({
+                val targetCurrencyValue = usdValueOfCurrency * it.value
+                Log.e(TAG,"currency conversion : currency ${it.key} value ${it.value} converted usd = $targetCurrencyValue")
+                list.put(
+                    it.key,
+                    targetCurrencyValue
+                )
+            })
         }
-        val sourceCurrencyValue = currencyMap.get(source)!!
-        val usdValueOfCurrency = value/sourceCurrencyValue
-        Log.e(TAG,"currency conversion : sourceCurrencyValue $sourceCurrencyValue usdValueOfCurrency $usdValueOfCurrency")
-        currencyMap.forEach({
-            val targetCurrencyValue = usdValueOfCurrency * it.value
-            Log.e(TAG,"currency conversion : currency ${it.key} value ${it.value} converted usd = $targetCurrencyValue")
-            list.put(
-                it.key,
-                targetCurrencyValue
-            )
-        })
         return list
-    }
-
-
-/*    private fun getAllFromDb(): List<CurrencyEntity> {
-        Log.d(TAG,"Networking getDataFromDb() getting from local db")
-        CoroutineScope(Dispatchers.Default).launch {
-
-            try {
-                val localData  = processLocalData(appDatabase.currencyDao().getAll())
-
-                liveData.postValue(Resource.success("data from local-db",appDatabase.currencyDao().getAll()))
-            }catch (exp: Exception){
-                liveData.postValue(Resource.error("Error on getting data from db",null))
-            }
-        }
-    }*/
-
-    private fun insertIntoDb(list: List<CurrencyEntity>){
-        CoroutineScope(Dispatchers.Main).launch {
-            list.apply {
-                val insertionProcessDone = withContext(Dispatchers.IO){
-                    try{
-                        appDatabase.currencyDao().insertAll(list)
-                        true
-                    }catch (exp: Exception){
-                        false
-                    }
-                }
-                if(insertionProcessDone){
-                    Log.e(TAG,"All data inserted")
-                }
-            }
-        }
     }
 }

@@ -11,13 +11,14 @@ import com.sadikul.currencyconverter.data.local.LocalDatabase
 import com.sadikul.currencyconverter.data.local.entity.CurrencyEntity
 import com.sadikul.currencyconverter.data.model.CurrencyResponse
 import com.sadikul.currencyconverter.utils.NetworkHelper
+import com.sadikul.currencyconverter.utils.Utill
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import kotlinx.coroutines.*
 import java.lang.Exception
-import javax.inject.Inject
+
 @HiltWorker
-class ServerDataReceiver @AssistedInject constructor(
+class CurrencyDataWorker @AssistedInject constructor(
     @Assisted appContext: Context,
     @Assisted workerParams: WorkerParameters,
     private val networkHelper: NetworkHelper,
@@ -26,7 +27,7 @@ class ServerDataReceiver @AssistedInject constructor(
 ) : CoroutineWorker(appContext, workerParams) {
 
     companion object{
-        private val TAG = ServerDataReceiver::class.java.simpleName
+        private val TAG = CurrencyDataWorker::class.java.simpleName
     }
 
     override suspend fun doWork(): Result {
@@ -39,8 +40,14 @@ class ServerDataReceiver @AssistedInject constructor(
                     "1"
                 )
                 if(serverResponse.isSuccessful){
-                    Log.d(TAG,"Networking getting data isSuccessful")
-                    insertIntoDb(processData(serverResponse.body()!!))
+                    //appDatabase.currencyDao().clearAll()
+                    //insertIntoDb(appDatabase,processServerData(serverResponse.body()!!))
+                    val data = Utill.processServerData(serverResponse.body()!!)
+                    Log.d(TAG,"Networking getting data isSuccessful data size ${data.size}")
+                    if(data.size > 0){
+                        appDatabase.currencyDao().clearAll()
+                        appDatabase.currencyDao().insertAll(data)
+                    }
                     //currencyMutableLiveData.postValue(Resource.success("Response received",processData(serverResponse.body()!!)))
                     return Result.success()
                 }else{
@@ -57,18 +64,21 @@ class ServerDataReceiver @AssistedInject constructor(
         }
     }
 
-    private fun processData(response: CurrencyResponse): List<CurrencyEntity> {
-        Log.d(TAG,"Networking getImages() Processing data")
+/*
+    private fun processServerData(response: CurrencyResponse): List<CurrencyEntity> {
+        Log.d(TAG,"Networking getImages() Processing data response ${response.quotes?.size}")
         val list = mutableListOf<CurrencyEntity>()
         response.quotes?.let {
             var id = 0;
             for (data in it) {
+                Log.d(TAG,"processServerData response key ${data.key} value ${data.value}")
                 id++;
                 data.apply {
                     val item = CurrencyEntity(
                         id,
-                        data.key,
+                        data.key.substring(3),
                         data.value,
+                        System.currentTimeMillis()
                     )
                     list.add(item)
                 }
@@ -76,12 +86,14 @@ class ServerDataReceiver @AssistedInject constructor(
         }
         return list
     }
+*/
 
-    private fun insertIntoDb(data: List<CurrencyEntity>){
+    private fun insertIntoDb(appDatabase: LocalDatabase,data: List<CurrencyEntity>){
         CoroutineScope(Dispatchers.Main).launch {
             data.apply {
                 val insertionProcessDone = withContext(Dispatchers.IO){
                     try{
+                        Log.d(TAG,"Worker insertIntoDb() insertingData ${data.size}")
                         appDatabase.currencyDao().insertAll(data)
                         true
                     }catch (exp: Exception){

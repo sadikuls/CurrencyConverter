@@ -25,7 +25,7 @@ class LocalDatabaseTest{
     var instantTaskExecutorRule = InstantTaskExecutorRule()
 
     @Before
-    public fun setUp(){
+    fun setUp(){
         db = Room.inMemoryDatabaseBuilder(
             ApplicationProvider.getApplicationContext(),
             CurrencyDatabase::class.java
@@ -39,11 +39,38 @@ class LocalDatabaseTest{
     }
 
     @Test
-    fun writeAndReadSpend() = runBlockingTest {
+    fun writeAndReadCurrency() = runBlockingTest {
         val currencyItem = CurrencyEntity(0,"usd",1.00,3245533)
         db.currencyDao().insert(item = currencyItem)
         val currencies = db.currencyDao().getAll()
         assertThat(currencies.contains(currencyItem)).isTrue()
 
+    }
+
+
+    @Test
+    fun writeAllAndReadCurrency() = runBlockingTest {
+        val currencyItems = mutableListOf<CurrencyEntity>()
+        val usd = CurrencyEntity(0,"usd",1.00,324553323)
+        val bdt = CurrencyEntity(1,"bdt",85.00,342242424)
+        currencyItems.add(bdt)
+        currencyItems.add(usd)
+        db.currencyDao().insertAll(item = currencyItems)
+        val currencies = db.currencyDao().getAll()
+        assertThat(currencies.size > 0 && currencies.contains(bdt)).isTrue()
+    }
+
+
+    @Test
+    fun clearDb() = runBlockingTest {
+        val currencyItems = mutableListOf<CurrencyEntity>()
+        val usd = CurrencyEntity(0,"usd",1.00,324553323)
+        val bdt = CurrencyEntity(1,"bdt",85.00,342242424)
+        currencyItems.add(bdt)
+        currencyItems.add(usd)
+        db.currencyDao().insertAll(item = currencyItems)
+        db.currencyDao().clearAll()
+        val currencies = db.currencyDao().getAll()
+        assertThat(currencies.size == 0 ).isTrue()
     }
 }

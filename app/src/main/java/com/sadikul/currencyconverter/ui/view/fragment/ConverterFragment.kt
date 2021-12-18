@@ -23,6 +23,7 @@ import com.sadikul.currencyconverter.data.local.entity.CurrencyEntity
 import com.sadikul.currencyconverter.databinding.FragmentConverterBinding
 import com.sadikul.currencyconverter.ui.view.adapter.CurrencyAdapter
 import com.sadikul.currencyconverter.ui.view.viewmodel.CurrencyViewModel
+import com.sadikul.currencyconverter.utils.Constants
 import com.sadikul.currencyconverter.utils.Status
 import com.sadikul.currencyconverter.utils.Utill
 import com.sadikul.currencyconverter.worker.CurrencyDataWorker
@@ -39,18 +40,25 @@ class ConverterFragment : Fragment() {
     private lateinit var _binding: FragmentConverterBinding
     private val TAG = ConverterFragment::class.java.simpleName
     private lateinit var currencyAdapter: CurrencyAdapter
+    @Inject
+    lateinit var workManager: WorkManager
+    @Inject
+    lateinit var currencyWorkRequest: PeriodicWorkRequest
     private var selectedCurrency = "USD"
 
     private var isSpinnerHasSet: Boolean = false
+
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        //Get currency value in every 30 mins
+        createPeriodicWorkRequest()
         _binding = FragmentConverterBinding.bind(view)
         _binding.textfieldCurrencyInput.text = Editable.Factory.getInstance().newEditable("1")
         Utill.hideKeyboard(requireContext(),view)
         observeTextChange()
-        currencyViewModel.getData(selectedCurrency, "1")
         setupObserver()
         setupRecyclerView()
+        currencyViewModel.getData(selectedCurrency, "1")
     }
 
     private fun observeTextChange() {
@@ -179,49 +187,26 @@ class ConverterFragment : Fragment() {
         currencyAdapter.notifyDataSetChanged()
     }
 
-/*
     private fun createPeriodicWorkRequest() {
-        val currencyWorkRequest = PeriodicWorkRequestBuilder<CurrencyDataWorker>(30, TimeUnit.MINUTES)
-            .setConstraints(
-                Constraints.Builder()
-                    .setRequiredNetworkType(NetworkType.CONNECTED)
-                    .setRequiresStorageNotLow(true)
-                    .setRequiresBatteryNotLow(true)
-                    .build())
-            .addTag("currencyDataWork")
-            .build()
-
         workManager.enqueueUniquePeriodicWork(
-            "preodicCurrencyData",
+            Constants.PERIODIC_WORK_NAME,
             ExistingPeriodicWorkPolicy.KEEP,
-            PeriodicWorkRequestBuilder<CurrencyDataWorker>(30, TimeUnit.MINUTES)
-                .setConstraints(
-                    Constraints.Builder()
-                        .setRequiredNetworkType(NetworkType.CONNECTED)
-                        .setRequiresStorageNotLow(true)
-                        .setRequiresBatteryNotLow(true)
-                        .build())
-                .addTag("currencyDataWork")
-                .build()
+            currencyWorkRequest
         )
         observeWork(currencyWorkRequest.id)
     }
-*/
 
-/*
     private fun observeWork(id: UUID) {
         workManager.getWorkInfoByIdLiveData(id)
             .observe(viewLifecycleOwner, { info ->
-                // 2
                 if (info != null && info.state.isFinished) {
                     //hideLottieAnimation()
+                    Log.e(TAG,"Currency data is updated")
                     Toast.makeText(requireContext(), "Currency data is updated", Toast.LENGTH_LONG)
                         .show()
-
                 }
             })
     }
-*/
 
 
     private fun showLoader() = _binding?.apply {

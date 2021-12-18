@@ -93,7 +93,7 @@ internal class ApplicationModule {
                 .setRequiresStorageNotLow(true)
                 .setRequiresBatteryNotLow(true)
                 .build())
-            .setInitialDelay(PERIODIC_WORK_INITIAL_DELAY,TimeUnit.SECONDS)
+            .setInitialDelay(PERIODIC_WORK_INITIAL_DELAY,TimeUnit.MINUTES)
             .addTag(PERIODIC_WORK_TAG)
             .build()
     }

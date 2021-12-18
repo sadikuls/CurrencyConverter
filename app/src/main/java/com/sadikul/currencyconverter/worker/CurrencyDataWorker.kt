@@ -7,9 +7,8 @@ import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.pactice.hild_mvvm_room.dada.api.CurrencyApi
 import com.sadikul.currencyconverter.BuildConfig
-import com.sadikul.currencyconverter.data.local.LocalDatabase
+import com.sadikul.currencyconverter.data.local.CurrencyDatabase
 import com.sadikul.currencyconverter.data.local.entity.CurrencyEntity
-import com.sadikul.currencyconverter.data.model.CurrencyResponse
 import com.sadikul.currencyconverter.utils.NetworkHelper
 import com.sadikul.currencyconverter.utils.Utill
 import dagger.assisted.Assisted
@@ -23,7 +22,7 @@ class CurrencyDataWorker @AssistedInject constructor(
     @Assisted workerParams: WorkerParameters,
     private val networkHelper: NetworkHelper,
     private val currencyApi: CurrencyApi,
-    private val appDatabase: LocalDatabase
+    private val appDatabase: CurrencyDatabase
 ) : CoroutineWorker(appContext, workerParams) {
 
     companion object{
@@ -88,7 +87,7 @@ class CurrencyDataWorker @AssistedInject constructor(
     }
 */
 
-    private fun insertIntoDb(appDatabase: LocalDatabase,data: List<CurrencyEntity>){
+    private fun insertIntoDb(appDatabase: CurrencyDatabase, data: List<CurrencyEntity>){
         CoroutineScope(Dispatchers.Main).launch {
             data.apply {
                 val insertionProcessDone = withContext(Dispatchers.IO){

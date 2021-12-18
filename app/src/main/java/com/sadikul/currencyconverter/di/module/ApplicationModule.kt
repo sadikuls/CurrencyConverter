@@ -5,11 +5,13 @@ import android.util.Log
 import androidx.work.*
 import com.pactice.hild_mvvm_room.dada.api.CurrencyApi
 import com.sadikul.currencyconverter.BuildConfig
-import com.sadikul.currencyconverter.data.local.LocalDatabase
+import com.sadikul.currencyconverter.data.local.CurrencyDatabase
+import com.sadikul.currencyconverter.data.repository.CurrencyRepo
 import com.sadikul.currencyconverter.utils.Constants
 import com.sadikul.currencyconverter.utils.Constants.PERIODIC_WORK_INITIAL_DELAY
 import com.sadikul.currencyconverter.utils.Constants.PERIODIC_WORK_INTERVAL
 import com.sadikul.currencyconverter.utils.Constants.PERIODIC_WORK_TAG
+import com.sadikul.currencyconverter.utils.NetworkHelper
 import com.sadikul.currencyconverter.utils.PreferenceManager
 import com.sadikul.currencyconverter.worker.CurrencyDataWorker
 import dagger.Module
@@ -80,11 +82,10 @@ internal class ApplicationModule {
 
     @Provides
     @Singleton
-    fun provideAppDatabase(@ApplicationContext appContext: Context) = LocalDatabase.getInstance(context = appContext)
+    fun provideAppDatabase(@ApplicationContext appContext: Context) = CurrencyDatabase.getInstance(context = appContext)
 
     @Provides
     fun provideWorkRequest(): PeriodicWorkRequest{
-        val constraints =
         return PeriodicWorkRequestBuilder<CurrencyDataWorker>(PERIODIC_WORK_INTERVAL, TimeUnit.MINUTES)
             .setConstraints(
                 Constraints.Builder()
@@ -99,5 +100,15 @@ internal class ApplicationModule {
 
     @Provides
     @Singleton
-    fun provideWorkManager(@ApplicationContext appContext: Context): WorkManager = WorkManager.getInstance(appContext)
+    fun provideWorkManager(@ApplicationContext appContext: Context): WorkManager = WorkManager.getInstance(
+        appContext
+    )
+
+    @Provides
+    @Singleton
+    fun provideCurrencyRepo(
+        database: CurrencyDatabase,
+        networkHelper: NetworkHelper,
+        currencyApi: CurrencyApi
+    ):CurrencyRepo = CurrencyRepo(currencyApi, database, networkHelper)
 }

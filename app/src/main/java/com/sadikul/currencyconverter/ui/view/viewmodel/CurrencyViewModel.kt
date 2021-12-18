@@ -5,7 +5,6 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.sadikul.currencyconverter.data.local.entity.CurrencyEntity
 import com.sadikul.currencyconverter.data.repository.CurrencyRepo
 import com.sadikul.currencyconverter.utils.Resource
 import dagger.hilt.android.lifecycle.HiltViewModel

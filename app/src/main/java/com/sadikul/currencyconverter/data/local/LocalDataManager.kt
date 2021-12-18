@@ -2,7 +2,6 @@ package com.sadikul.currencyconverter.data.local
 
 import android.util.Log
 import com.sadikul.currencyconverter.data.local.entity.CurrencyEntity
-import com.sadikul.currencyconverter.data.repository.CurrencyRepo
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -10,7 +9,7 @@ import kotlinx.coroutines.withContext
 import java.lang.Exception
 import javax.inject.Inject
 
-class LocalDataManager @Inject constructor(private val appDatabase: LocalDatabase){
+class LocalDataManager @Inject constructor(private val appDatabase: CurrencyDatabase){
     companion object{
         private val TAG = LocalDataManager::class.java.simpleName
     }

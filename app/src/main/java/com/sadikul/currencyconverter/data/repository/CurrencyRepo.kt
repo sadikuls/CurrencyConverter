@@ -1,26 +1,20 @@
 package com.sadikul.currencyconverter.data.repository
 
 import android.util.Log
-import android.widget.Toast
 import androidx.lifecycle.MutableLiveData
 import com.pactice.hild_mvvm_room.dada.api.CurrencyApi
 import com.sadikul.currencyconverter.BuildConfig
-import com.sadikul.currencyconverter.data.local.LocalDatabase
+import com.sadikul.currencyconverter.data.local.CurrencyDatabase
 import com.sadikul.currencyconverter.data.local.entity.CurrencyEntity
-import com.sadikul.currencyconverter.data.model.CurrencyResponse
 import com.sadikul.currencyconverter.utils.NetworkHelper
 import com.sadikul.currencyconverter.utils.Resource
 import com.sadikul.currencyconverter.utils.Utill
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import java.lang.Exception
 import javax.inject.Inject
 
 class CurrencyRepo @Inject constructor(
     private val currencyApi: CurrencyApi,
-    private val appDatabase: LocalDatabase,
+    private val appDatabase: CurrencyDatabase,
     private val networkHelper: NetworkHelper
 ){
     companion object{
@@ -30,20 +24,21 @@ class CurrencyRepo @Inject constructor(
     suspend fun getData(
         source: String,
         value: String,
-        currencyMutableLiveData: MutableLiveData<Resource<MutableMap<String,Double>>>
-    ){
-        currencyMutableLiveData.postValue(Resource.loading(null))
+        currencyMutableLiveData: MutableLiveData<Resource<MutableMap<String, Double>>>?
+    ):Boolean{
+        if(source.equals("") || value.equals("")) return false
+        currencyMutableLiveData?.postValue(Resource.loading(null))
         var dataFromLocal = appDatabase.currencyDao().getAll()
 
         if(dataFromLocal.size == 0){
             Log.e(TAG,"Networking getData() Database is empty")
-            getDataFromServer(source, value, currencyMutableLiveData)
+            getDataFromServer(source, value, currencyMutableLiveData!!)
         }else{
             Log.e(TAG,"Networking getData() Shoiwng local data")
             convertToMap(dataFromLocal).let {
                 try {
                     val inputValue = value.toDouble()
-                    currencyMutableLiveData.postValue(Resource.success("data from local-db",convertCurrency(source, inputValue ,it)))
+                    currencyMutableLiveData?.postValue(Resource.success("data from local-db",convertCurrency(source, inputValue ,it)))
                 }catch (ex: Exception){
                     Log.e(TAG,"Networking getData() error cause : ${ex.cause} message ${ex.message}")
                     var errMessage = "Something went wrong."
@@ -52,10 +47,11 @@ class CurrencyRepo @Inject constructor(
                             errMessage = "Could not convert."
                         }
                     }
-                    currencyMutableLiveData.postValue(Resource.error(errMessage,null))
+                    currencyMutableLiveData?.postValue(Resource.error(errMessage,null))
                 }
             }
         }
+        return true
     }
 
     private suspend fun getDataFromServer(source: String, value: String, currencyMutableLiveData: MutableLiveData<Resource<MutableMap<String,Double>>>) {

@@ -1,4 +1,4 @@
-package com.sadikul.currencyconverter.data.local.dao
+package com.sadikul.currencyconverter.data.local
 
 import androidx.room.*
 import com.sadikul.currencyconverter.data.local.entity.CurrencyEntity

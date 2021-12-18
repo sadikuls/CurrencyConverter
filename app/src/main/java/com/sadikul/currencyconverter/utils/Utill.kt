@@ -5,7 +5,7 @@ import android.content.Context
 import android.util.Log
 import android.view.View
 import android.view.inputmethod.InputMethodManager
-import com.sadikul.currencyconverter.data.local.LocalDatabase
+import com.sadikul.currencyconverter.data.local.CurrencyDatabase
 import com.sadikul.currencyconverter.data.local.entity.CurrencyEntity
 import com.sadikul.currencyconverter.data.model.CurrencyResponse
 import kotlinx.coroutines.CoroutineScope
@@ -42,7 +42,7 @@ object Utill{
         return list
     }
 
-    fun insertIntoDb(appDatabase: LocalDatabase, data: List<CurrencyEntity>){
+    fun insertIntoDb(appDatabase: CurrencyDatabase, data: List<CurrencyEntity>){
         CoroutineScope(Dispatchers.Main).launch {
             data.apply {
                 val insertionProcessDone = withContext(Dispatchers.IO){

@@ -8,6 +8,7 @@ import com.sadikul.currencyconverter.data.local.CurrencyDatabase
 import com.sadikul.currencyconverter.data.local.entity.CurrencyEntity
 import com.sadikul.currencyconverter.utils.NetworkHelper
 import com.sadikul.currencyconverter.utils.Resource
+import com.sadikul.currencyconverter.utils.Status
 import com.sadikul.currencyconverter.utils.Utill
 import java.lang.Exception
 import javax.inject.Inject
@@ -32,7 +33,7 @@ class CurrencyRepo @Inject constructor(
 
         if(dataFromLocal.size == 0){
             Log.e(TAG,"Networking getData() Database is empty")
-            getDataFromServer(source, value, currencyMutableLiveData!!)
+            getRemoteData(source, value, currencyMutableLiveData)
         }else{
             Log.e(TAG,"Networking getData() Shoiwng local data")
             convertToMap(dataFromLocal).let {
@@ -54,8 +55,59 @@ class CurrencyRepo @Inject constructor(
         return true
     }
 
-    private suspend fun getDataFromServer(source: String, value: String, currencyMutableLiveData: MutableLiveData<Resource<MutableMap<String,Double>>>) {
+    private suspend fun getRemoteData(
+        source: String,
+        value: String,
+        currencyMutableLiveData: MutableLiveData<Resource<MutableMap<String, Double>>>?
+    ) {
+        getDataFromServer(source, value) { response ->
+            when (response.status) {
+                Status.SUCCESS -> {
+                    Log.d(TAG, "remote-data Data successfully got from server")
+                    response.data?.let {
+                        if (it.size > 0) {
+                            val map = convertToMap(it)
+                            Log.i(TAG, "map size ${map.size}")
+                            map.let {
+                                try {
+                                    currencyMutableLiveData?.postValue(
+                                        Resource.success(
+                                            "Response received",
+                                            convertCurrency(source, value.toDouble(), it)
+                                        )
+                                    )
+                                } catch (ex: Exception) {
+                                    currencyMutableLiveData?.postValue(
+                                        Resource.error(
+                                            "Something went wrong",
+                                            null
+                                        )
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+
+                Status.ERROR -> {
+                    Log.d(TAG, "remote-data failed to get data from server")
+                    currencyMutableLiveData?.postValue(Resource.error("Error", null))
+                }
+            }
+        }
+    }
+
+    suspend fun clearDb(){
+        appDatabase.currencyDao().clearAll()
+    }
+
+    suspend fun insertToDb(items: List<CurrencyEntity>){
+        appDatabase.currencyDao().insertAll(items)
+    }
+
+    suspend fun getDataFromServer(source: String, value: String, result: (Resource<List<CurrencyEntity>>) -> Unit): Boolean {
         val defaultValue = 1
+        Log.i(TAG,"remote-data getDataFromServerWithCallback method called")
         if(networkHelper.isNetworkConnected()){
             val serverResponse = currencyApi.getData(
                 BuildConfig.API_KEY,
@@ -63,52 +115,24 @@ class CurrencyRepo @Inject constructor(
                 defaultValue.toString()
             )
             if(serverResponse.isSuccessful){
-                //val data = processServerData(serverResponse.body()!!)
                 val data = Utill.processServerData(serverResponse.body()!!)
                 data.let {
                     if(it.size > 0){
-                        val map = convertToMap(it)
-                        Log.i(TAG,"map size ${map.size}")
-                        map.let {
-                            try{
-                                currencyMutableLiveData.postValue(Resource.success("Response received",convertCurrency(source,value.toDouble(),it)))
-                            }catch(ex: Exception){
-                                currencyMutableLiveData.postValue(Resource.error("Something went wrong",null))
-                            }
-                        }
-                        Utill.insertIntoDb(appDatabase, it)
-                        appDatabase.currencyDao().clearAll()
-                        appDatabase.currencyDao().insertAll(it)
+                        Log.i(TAG,"remote-data inserting to db")
+                        clearDb()
+                        insertToDb(it)
+                        result(Resource.success("Successfully got the data",it))
+                        return true
                     }
                 }
             }else{
-                currencyMutableLiveData.postValue(Resource.error("Error",null))
+                Resource.error("Network connection not available",null)
+                return false
             }
         }
+        return false
     }
 
-/*
-    private fun processServerData(response: CurrencyResponse): List<CurrencyEntity> {
-        Log.d(TAG,"Networking getData() Processing data")
-        val list = mutableListOf<CurrencyEntity>()
-        response.quotes?.let {
-            var id = 0;
-            for (data in it) {
-                id++;
-                data.apply {
-                    val item = CurrencyEntity(
-                        id,
-                        data.key.substring(3),
-                        data.value
-                    )
-                    list.add(item)
-                }
-                list.add(CurrencyEntity(++id,"USD",1.0))
-            }
-        }
-        return list
-    }
-*/
 
     private fun convertToMap(list: List<CurrencyEntity>): MutableMap<String,Double>{
         val map = mutableMapOf<String,Double>()

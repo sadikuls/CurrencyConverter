@@ -42,25 +42,6 @@ object Utill{
         return list
     }
 
-    fun insertIntoDb(appDatabase: CurrencyDatabase, data: List<CurrencyEntity>){
-        CoroutineScope(Dispatchers.Main).launch {
-            data.apply {
-                val insertionProcessDone = withContext(Dispatchers.IO){
-                    try{
-                        //appDatabase.currencyDao().clearAll()
-                        appDatabase.currencyDao().insertAll(data)
-                        true
-                    }catch (exp: Exception){
-                        false
-                    }
-                }
-                if(insertionProcessDone){
-                    Log.d(TAG, "All data inserted")
-                }
-            }
-        }
-    }
-
     fun convertMillsToTime(mills: Long): String{
         val formatter = SimpleDateFormat("dd/MM/yyyy hh:mm:ss.SSS")
         val calendar = Calendar.getInstance()

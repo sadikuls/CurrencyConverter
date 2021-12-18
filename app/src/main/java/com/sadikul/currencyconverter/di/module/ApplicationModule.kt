@@ -24,6 +24,7 @@ import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import java.util.concurrent.TimeUnit
+import javax.inject.Named
 import javax.inject.Singleton
 
 @Module
@@ -33,9 +34,10 @@ internal class ApplicationModule {
 
     @Provides
     fun provideBaseUrl() = BuildConfig.BASE_URL
-/*
+
     @Provides
-    fun provideApiKeY() = BuildConfig.API_KEY*/
+    @Named("API_KEY")
+    fun provideApiKeY() = BuildConfig.API_KEY
 
     @Provides
     fun provideTimeOutLimit() = Constants.TIME_OUT_LIMIT

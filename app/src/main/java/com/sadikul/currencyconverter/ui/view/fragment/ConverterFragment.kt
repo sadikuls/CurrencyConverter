@@ -199,11 +199,9 @@ class ConverterFragment : Fragment() {
     private fun observeWork(id: UUID) {
         workManager.getWorkInfoByIdLiveData(id)
             .observe(viewLifecycleOwner, { info ->
-                if (info != null && info.state.isFinished) {
-                    //hideLottieAnimation()
+                if (info != null) {
                     Log.e(TAG,"Currency data is updated")
-                    Toast.makeText(requireContext(), "Currency data is updated", Toast.LENGTH_LONG)
-                        .show()
+                   // Toast.makeText(requireContext(), "Currency data is updated", Toast.LENGTH_LONG).show()
                 }
             })
     }

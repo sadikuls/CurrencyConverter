@@ -10,6 +10,11 @@ import com.sadikul.currencyconverter.utils.NetworkHelper
 import com.sadikul.currencyconverter.utils.Resource
 import com.sadikul.currencyconverter.utils.Status
 import com.sadikul.currencyconverter.utils.Utill
+import com.sadikul.currencyconverter.worker.CurrencyDataWorker
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.lang.Exception
 import javax.inject.Inject
 
@@ -35,7 +40,7 @@ class CurrencyRepo @Inject constructor(
             Log.e(TAG,"Networking getData() Database is empty")
             getRemoteData(source, value, currencyMutableLiveData)
         }else{
-            Log.e(TAG,"Networking getData() Shoiwng local data")
+            Log.e(TAG,"Networking getData() Shoiwng local data updated at : ${Utill.convertMillsToTime(dataFromLocal.get(0).time!!)}")
             convertToMap(dataFromLocal).let {
                 try {
                     val inputValue = value.toDouble()
@@ -66,6 +71,12 @@ class CurrencyRepo @Inject constructor(
                     Log.d(TAG, "remote-data Data successfully got from server")
                     response.data?.let {
                         if (it.size > 0) {
+                            CoroutineScope(Dispatchers.Default).launch {
+                                withContext(Dispatchers.IO){
+                                    //clearDb()
+                                    //insertToDb(it)
+                                }
+                            }
                             val map = convertToMap(it)
                             Log.i(TAG, "map size ${map.size}")
                             map.let {
@@ -93,15 +104,20 @@ class CurrencyRepo @Inject constructor(
                     Log.d(TAG, "remote-data failed to get data from server")
                     currencyMutableLiveData?.postValue(Resource.error("Error", null))
                 }
+                else -> {
+                    Log.d(TAG, "Something went wrong.")
+                }
             }
         }
     }
 
     suspend fun clearDb(){
+        Log.d(TAG, "remote-data clearDb : clearing currency table")
         appDatabase.currencyDao().clearAll()
     }
 
     suspend fun insertToDb(items: List<CurrencyEntity>){
+        Log.d(TAG, "remote-data insertToDb : inserting ${items.size} data to currency table")
         appDatabase.currencyDao().insertAll(items)
     }
 
@@ -115,16 +131,13 @@ class CurrencyRepo @Inject constructor(
                 defaultValue.toString()
             )
             if(serverResponse.isSuccessful){
-                val data = Utill.processServerData(serverResponse.body()!!)
-                data.let {
-                    if(it.size > 0){
-                        Log.i(TAG,"remote-data inserting to db")
-                        clearDb()
-                        insertToDb(it)
-                        result(Resource.success("Successfully got the data",it))
-                        return true
-                    }
+                try {
+                    val data = Utill.processServerData(serverResponse.body()!!)
+                    result(Resource.success("Successfully got the data",data))
+                }catch (ex: Exception){
+
                 }
+
             }else{
                 Resource.error("Network connection not available",null)
                 return false
@@ -137,11 +150,6 @@ class CurrencyRepo @Inject constructor(
     private fun convertToMap(list: List<CurrencyEntity>): MutableMap<String,Double>{
         val map = mutableMapOf<String,Double>()
         for (item in list) {
-            Log.i(TAG,"convertToMap id $item.id" +
-                    "key ${item.currency} value ${item.value}}")
-            item.time?.let {
-                Log.i(TAG,"convertToMap ${Utill.convertMillsToTime(it)}}")
-            }
             map.put(item.currency!!, item.value!!)
         }
         return map
@@ -154,14 +162,14 @@ class CurrencyRepo @Inject constructor(
     ): MutableMap<String,Double>{
 
         val list = mutableMapOf<String,Double>()
-        Log.e(TAG,"currency conversion : source $source usdValueOfCurrency value $value currencyMap size ${currencyMap.size}")
+        //Log.e(TAG,"currency conversion : source $source usdValueOfCurrency value $value currencyMap size ${currencyMap.size}")
         if(currencyMap.size > 0){
             val sourceCurrencyValue = currencyMap.get(source)!!
             val usdValueOfCurrency = value/sourceCurrencyValue
-            Log.e(TAG,"currency conversion : sourceCurrencyValue $sourceCurrencyValue usdValueOfCurrency $usdValueOfCurrency")
+            //Log.e(TAG,"currency conversion : sourceCurrencyValue $sourceCurrencyValue usdValueOfCurrency $usdValueOfCurrency")
             currencyMap.forEach({
                 val targetCurrencyValue = usdValueOfCurrency * it.value
-                Log.e(TAG,"currency conversion : currency ${it.key} value ${it.value} converted usd = $targetCurrencyValue")
+                //Log.e(TAG,"currency conversion : currency ${it.key} value ${it.value} converted usd = $targetCurrencyValue")
                 list.put(
                     it.key,
                     targetCurrencyValue

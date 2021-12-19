@@ -40,7 +40,7 @@ class LocalDatabaseTest{
 
     @Test
     fun writeAndReadCurrency() = runBlockingTest {
-        val currencyItem = CurrencyEntity(0,"usd",1.00,3245533)
+        val currencyItem = CurrencyEntity(0,"usd",1.00,1639930989101)
         db.currencyDao().insert(item = currencyItem)
         val currencies = db.currencyDao().getAll()
         assertThat(currencies.contains(currencyItem)).isTrue()
@@ -51,8 +51,8 @@ class LocalDatabaseTest{
     @Test
     fun writeAllAndReadCurrency() = runBlockingTest {
         val currencyItems = mutableListOf<CurrencyEntity>()
-        val usd = CurrencyEntity(0,"usd",1.00,324553323)
-        val bdt = CurrencyEntity(1,"bdt",85.00,342242424)
+        val usd = CurrencyEntity(0,"usd",1.00,1639930989101)
+        val bdt = CurrencyEntity(1,"bdt",85.00,1639930989101)
         currencyItems.add(bdt)
         currencyItems.add(usd)
         db.currencyDao().insertAll(item = currencyItems)
@@ -64,8 +64,8 @@ class LocalDatabaseTest{
     @Test
     fun clearDb() = runBlockingTest {
         val currencyItems = mutableListOf<CurrencyEntity>()
-        val usd = CurrencyEntity(0,"usd",1.00,324553323)
-        val bdt = CurrencyEntity(1,"bdt",85.00,342242424)
+        val usd = CurrencyEntity(0,"usd",1.00,1639930989101)
+        val bdt = CurrencyEntity(1,"bdt",85.00,1639930989101)
         currencyItems.add(bdt)
         currencyItems.add(usd)
         db.currencyDao().insertAll(item = currencyItems)

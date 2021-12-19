@@ -9,6 +9,10 @@ import com.sadikul.currencyconverter.data.repository.CurrencyRepo
 import com.sadikul.currencyconverter.utils.Status
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 @HiltWorker
 class CurrencyDataWorker @AssistedInject constructor(
@@ -22,20 +26,31 @@ class CurrencyDataWorker @AssistedInject constructor(
     }
 
     override suspend fun doWork(): Result {
-        var result = Result.failure()
         repository.getDataFromServer("USD","1") { response ->
             when (response.status) {
                 Status.SUCCESS -> {
                     Log.d(TAG, "remote-data Data successfully got from server")
-                    result = Result.success()
+                    response.data?.let {
+                        if (it.size > 0) {
+                            CoroutineScope(Dispatchers.Default).launch {
+                                withContext(Dispatchers.IO) {
+                                    Log.d(TAG, "remote-data inserting data to db")
+                                    repository.clearDb()
+                                    repository.insertToDb(it)
+                                }
+                            }
+                        }
+                    }
                 }
 
                 Status.ERROR -> {
                     Log.d(TAG, "remote-data failed to get data from server")
-                    result = Result.failure()
+                }
+                else -> {
+                    Log.d(TAG, "Something went wrong.")
                 }
             }
         }
-        return result
+        return Result.success()
     }
 }

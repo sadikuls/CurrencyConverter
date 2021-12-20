@@ -11,4 +11,6 @@ object Constants {
     const val PERIODIC_WORK_TAG : String = "currencyDataWork"
     const val PERIODIC_WORK_NAME : String = "preodicCurrencyData"
     const val ERROR_NO_INTERNET : String = "ERROR_NO_INTERNET"
+    const val DEFAULT_CURRENCY_SOURCE : String = "USD"
+    const val DEFAULT_CURRENCY_VALUE : String = "1"
 }

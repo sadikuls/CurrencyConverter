@@ -6,11 +6,8 @@ import com.pactice.hild_mvvm_room.dada.api.CurrencyApi
 import com.sadikul.currencyconverter.BuildConfig
 import com.sadikul.currencyconverter.data.local.CurrencyDatabase
 import com.sadikul.currencyconverter.data.local.entity.CurrencyEntity
+import com.sadikul.currencyconverter.utils.*
 import com.sadikul.currencyconverter.utils.Constants.ERROR_NO_INTERNET
-import com.sadikul.currencyconverter.utils.NetworkHelper
-import com.sadikul.currencyconverter.utils.Resource
-import com.sadikul.currencyconverter.utils.Status
-import com.sadikul.currencyconverter.utils.Utill
 import com.sadikul.currencyconverter.worker.CurrencyDataWorker
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -33,6 +30,7 @@ class CurrencyRepo @Inject constructor(
         value: String,
         currencyMutableLiveData: MutableLiveData<Resource<MutableMap<String, Double>>>?
     ):Boolean{
+        Log.e(TAG,"getData() requst for source ${source} value ${value}")
         if(source.equals("") || value.equals("")) return false
         currencyMutableLiveData?.postValue(Resource.loading(null))
         var dataFromLocal = appDatabase.currencyDao().getAll()
@@ -40,7 +38,7 @@ class CurrencyRepo @Inject constructor(
         if(dataFromLocal.size == 0){
             Log.e(TAG,"Networking getData() Database is empty")
             if(networkHelper.isNetworkConnected()){
-                getRemoteData("USD", "1", currencyMutableLiveData)
+                getRemoteData(source, value, currencyMutableLiveData)
             }else{
                 currencyMutableLiveData?.postValue(Resource.error(ERROR_NO_INTERNET,null))
             }
@@ -65,7 +63,10 @@ class CurrencyRepo @Inject constructor(
         value: String,
         currencyMutableLiveData: MutableLiveData<Resource<MutableMap<String, Double>>>?
     ) {
-        getDataFromServer (source, value){ response ->
+        getDataFromServer (
+            Constants.DEFAULT_CURRENCY_SOURCE,
+            Constants.DEFAULT_CURRENCY_VALUE
+        ){ response ->
             when (response.status) {
                 Status.SUCCESS -> {
                     Log.d(TAG, "remote-data Data successfully got from server")

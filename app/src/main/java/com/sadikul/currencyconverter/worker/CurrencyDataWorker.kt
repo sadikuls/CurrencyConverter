@@ -6,6 +6,8 @@ import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.sadikul.currencyconverter.data.repository.CurrencyRepo
+import com.sadikul.currencyconverter.utils.Constants.DEFAULT_CURRENCY_SOURCE
+import com.sadikul.currencyconverter.utils.Constants.DEFAULT_CURRENCY_VALUE
 import com.sadikul.currencyconverter.utils.Status
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
@@ -26,7 +28,7 @@ class CurrencyDataWorker @AssistedInject constructor(
     }
 
     override suspend fun doWork(): Result {
-        repository.getDataFromServer("USD","1") { response ->
+        repository.getDataFromServer(DEFAULT_CURRENCY_SOURCE, DEFAULT_CURRENCY_VALUE) { response ->
             when (response.status) {
                 Status.SUCCESS -> {
                     Log.d(TAG, "remote-data Data successfully got from server")

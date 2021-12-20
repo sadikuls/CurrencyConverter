@@ -6,6 +6,7 @@ import com.pactice.hild_mvvm_room.dada.api.CurrencyApi
 import com.sadikul.currencyconverter.BuildConfig
 import com.sadikul.currencyconverter.data.local.CurrencyDatabase
 import com.sadikul.currencyconverter.data.local.entity.CurrencyEntity
+import com.sadikul.currencyconverter.utils.Constants.ERROR_NO_INTERNET
 import com.sadikul.currencyconverter.utils.NetworkHelper
 import com.sadikul.currencyconverter.utils.Resource
 import com.sadikul.currencyconverter.utils.Status
@@ -38,7 +39,11 @@ class CurrencyRepo @Inject constructor(
 
         if(dataFromLocal.size == 0){
             Log.e(TAG,"Networking getData() Database is empty")
-            getRemoteData(source, value, currencyMutableLiveData)
+            if(networkHelper.isNetworkConnected()){
+                getRemoteData("USD", "1", currencyMutableLiveData)
+            }else{
+                currencyMutableLiveData?.postValue(Resource.error(ERROR_NO_INTERNET,null))
+            }
         }else{
             Log.e(TAG,"Networking getData() Shoiwng local data updated at : ${Utill.convertMillsToTime(dataFromLocal.get(0).time!!)}")
             convertToMap(dataFromLocal).let {
@@ -47,12 +52,7 @@ class CurrencyRepo @Inject constructor(
                     currencyMutableLiveData?.postValue(Resource.success("data from local-db",convertCurrency(source, inputValue ,it)))
                 }catch (ex: Exception){
                     Log.e(TAG,"Networking getData() error cause : ${ex.cause} message ${ex.message}")
-                    var errMessage = "Something went wrong."
-                    ex.message?.let{
-                        if(it.contains("For input string")){
-                            errMessage = "Could not convert."
-                        }
-                    }
+                    var errMessage = "Error while doing conversion."
                     currencyMutableLiveData?.postValue(Resource.error(errMessage,null))
                 }
             }
@@ -65,7 +65,7 @@ class CurrencyRepo @Inject constructor(
         value: String,
         currencyMutableLiveData: MutableLiveData<Resource<MutableMap<String, Double>>>?
     ) {
-        getDataFromServer(source, value) { response ->
+        getDataFromServer (source, value){ response ->
             when (response.status) {
                 Status.SUCCESS -> {
                     Log.d(TAG, "remote-data Data successfully got from server")
@@ -73,8 +73,8 @@ class CurrencyRepo @Inject constructor(
                         if (it.size > 0) {
                             CoroutineScope(Dispatchers.Default).launch {
                                 withContext(Dispatchers.IO){
-                                    //clearDb()
-                                    //insertToDb(it)
+                                    clearDb()
+                                    insertToDb(it)
                                 }
                             }
                             val map = convertToMap(it)
@@ -102,10 +102,15 @@ class CurrencyRepo @Inject constructor(
 
                 Status.ERROR -> {
                     Log.d(TAG, "remote-data failed to get data from server")
-                    currencyMutableLiveData?.postValue(Resource.error("Error", null))
+                    var message = ""
+                    response.message?.let{
+                        message = it
+                    }
+                    currencyMutableLiveData?.postValue(Resource.error(message, null))
                 }
                 else -> {
                     Log.d(TAG, "Something went wrong.")
+                    currencyMutableLiveData?.postValue(Resource.error("Something went wrong.", null))
                 }
             }
         }
@@ -121,14 +126,13 @@ class CurrencyRepo @Inject constructor(
         appDatabase.currencyDao().insertAll(items)
     }
 
-    suspend fun getDataFromServer(source: String, value: String, result: (Resource<List<CurrencyEntity>>) -> Unit): Boolean {
-        val defaultValue = 1
+    suspend fun getDataFromServer(source: String, value: String, result: (Resource<List<CurrencyEntity>>) -> Unit) {
         Log.i(TAG,"remote-data getDataFromServerWithCallback method called")
         if(networkHelper.isNetworkConnected()){
             val serverResponse = currencyApi.getData(
                 BuildConfig.API_KEY,
                 source,
-                defaultValue.toString()
+                value
             )
             if(serverResponse.isSuccessful){
                 try {
@@ -136,14 +140,13 @@ class CurrencyRepo @Inject constructor(
                     result(Resource.success("Successfully got the data",data))
                 }catch (ex: Exception){
 
-                }
-
-            }else{
-                Resource.error("Network connection not available",null)
-                return false
             }
+            }else{
+                result(Resource.error("Something went wrong.",null))
+            }
+        }else{
+            result(Resource.error(ERROR_NO_INTERNET,null))
         }
-        return false
     }
 
 

@@ -44,7 +44,9 @@ class CurrencyDataWorker @AssistedInject constructor(
                 }
 
                 Status.ERROR -> {
-                    Log.d(TAG, "remote-data failed to get data from server")
+                    response.message?.let{
+                        Log.d(TAG, "remote-data failed to get data from server, error ${it}")
+                    }
                 }
                 else -> {
                     Log.d(TAG, "Something went wrong.")

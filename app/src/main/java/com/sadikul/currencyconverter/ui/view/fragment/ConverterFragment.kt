@@ -24,10 +24,12 @@ import com.sadikul.currencyconverter.databinding.FragmentConverterBinding
 import com.sadikul.currencyconverter.ui.view.adapter.CurrencyAdapter
 import com.sadikul.currencyconverter.ui.view.viewmodel.CurrencyViewModel
 import com.sadikul.currencyconverter.utils.Constants
+import com.sadikul.currencyconverter.utils.Constants.ERROR_NO_INTERNET
 import com.sadikul.currencyconverter.utils.Status
 import com.sadikul.currencyconverter.utils.Utill
 import com.sadikul.currencyconverter.worker.CurrencyDataWorker
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.android.synthetic.main.fragment_converter.*
 import java.util.*
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
@@ -45,6 +47,7 @@ class ConverterFragment : Fragment() {
     @Inject
     lateinit var currencyWorkRequest: PeriodicWorkRequest
     private var selectedCurrency = "USD"
+    private var defaultValue = "1"
 
     private var isSpinnerHasSet: Boolean = false
 
@@ -53,19 +56,26 @@ class ConverterFragment : Fragment() {
         //Get currency value in every 30 mins
         createPeriodicWorkRequest()
         _binding = FragmentConverterBinding.bind(view)
-        _binding.textfieldCurrencyInput.text = Editable.Factory.getInstance().newEditable("1")
+        _binding.textfieldCurrencyInput.text = Editable.Factory.getInstance().newEditable(defaultValue)
         Utill.hideKeyboard(requireContext(),view)
         observeTextChange()
         setupObserver()
         setupRecyclerView()
-        currencyViewModel.getData(selectedCurrency, "1")
+        requestForData(selectedCurrency,defaultValue)
+        _binding.tvRetry.setOnClickListener{
+            requestForData(selectedCurrency,defaultValue)
+        }
+    }
+
+    private fun requestForData(currency: String, value: String) {
+        currencyViewModel.getData(currency, value)
     }
 
     private fun observeTextChange() {
         _binding.textfieldCurrencyInput.addTextChangedListener(object : TextWatcher {
             override fun afterTextChanged(s: Editable?) {
                 if (s?.length!! > 0) {
-                    currencyViewModel.getData(selectedCurrency, s.toString())
+                    requestForData(selectedCurrency, s.toString())
                 }
             }
 
@@ -101,10 +111,8 @@ class ConverterFragment : Fragment() {
                 position: Int,
                 id: Long
             ) {
-                //if(position != names.indexOf("USD")){
                 selectedCurrency = names.get(position)
-                currencyViewModel.getData(selectedCurrency, _binding.textfieldCurrencyInput.text.toString())
-                //}
+                requestForData(selectedCurrency, _binding.textfieldCurrencyInput.text.toString())
             }
 
             override fun onNothingSelected(parentView: AdapterView<*>?) {
@@ -130,6 +138,7 @@ class ConverterFragment : Fragment() {
                 Status.SUCCESS -> {
                     hideLoader(true)
                     it.data?.let { list ->
+                        if(list.size != 0) tvRetry.visibility = View.GONE
                         updateList(list)
                         if(!isSpinnerHasSet) {
                             setupSpinner(list)
@@ -144,10 +153,12 @@ class ConverterFragment : Fragment() {
                 }
 
                 Status.ERROR -> {
+                    Log.d(TAG, "currency-app got error ${it.message}")
                     hideLoader(false)
-                    Toast.makeText(requireContext(), it?.message, Toast.LENGTH_LONG)
-                    .show()
-                    Log.d(TAG, "currency-app got error")
+                    if(currencyList.size == 0) tvRetry.visibility = View.VISIBLE
+                    if(it.message.equals(ERROR_NO_INTERNET)){
+                        Toast.makeText(requireContext(),"Internet not available.",Toast.LENGTH_LONG).show()
+                    }
                 }
             }
         })

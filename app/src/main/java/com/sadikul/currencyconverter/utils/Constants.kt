@@ -10,4 +10,5 @@ object Constants {
     const val PERIODIC_WORK_INITIAL_DELAY : Long = 30
     const val PERIODIC_WORK_TAG : String = "currencyDataWork"
     const val PERIODIC_WORK_NAME : String = "preodicCurrencyData"
+    const val ERROR_NO_INTERNET : String = "ERROR_NO_INTERNET"
 }

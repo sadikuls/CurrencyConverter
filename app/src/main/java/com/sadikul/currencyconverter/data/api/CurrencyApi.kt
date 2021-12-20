@@ -1,4 +1,4 @@
-package com.pactice.hild_mvvm_room.dada.api
+package com.sadikul.currencyconverter.data.api
 import com.sadikul.currencyconverter.data.model.CurrencyResponse
 import retrofit2.Response
 import retrofit2.http.GET

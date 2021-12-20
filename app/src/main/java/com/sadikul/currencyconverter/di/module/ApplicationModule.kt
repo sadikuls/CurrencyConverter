@@ -3,8 +3,8 @@ package com.sadikul.currencyconverter.di.module
 import android.content.Context
 import android.util.Log
 import androidx.work.*
-import com.pactice.hild_mvvm_room.dada.api.CurrencyApi
 import com.sadikul.currencyconverter.BuildConfig
+import com.sadikul.currencyconverter.data.api.CurrencyApi
 import com.sadikul.currencyconverter.data.local.CurrencyDatabase
 import com.sadikul.currencyconverter.data.repository.CurrencyRepo
 import com.sadikul.currencyconverter.utils.Constants
@@ -12,7 +12,6 @@ import com.sadikul.currencyconverter.utils.Constants.PERIODIC_WORK_INITIAL_DELAY
 import com.sadikul.currencyconverter.utils.Constants.PERIODIC_WORK_INTERVAL
 import com.sadikul.currencyconverter.utils.Constants.PERIODIC_WORK_TAG
 import com.sadikul.currencyconverter.utils.NetworkHelper
-import com.sadikul.currencyconverter.utils.PreferenceManager
 import com.sadikul.currencyconverter.worker.CurrencyDataWorker
 import dagger.Module
 import dagger.Provides
@@ -41,10 +40,6 @@ internal class ApplicationModule {
 
     @Provides
     fun provideTimeOutLimit() = Constants.TIME_OUT_LIMIT
-
-    @Provides
-    @Singleton
-    fun providePreferenceManager(@ApplicationContext appContext: Context): PreferenceManager = PreferenceManager.getInstance(appContext)
 
     @Provides
     @Singleton

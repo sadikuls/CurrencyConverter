@@ -148,7 +148,6 @@ class ConverterFragment : Fragment() {
 
                 Status.LOADING -> {
                     showLoader()
-                    //Toast.makeText(context, it.message, Toast.LENGTH_LONG).show()
                     Log.d(TAG, "currency-app loading started")
                 }
 
@@ -212,7 +211,6 @@ class ConverterFragment : Fragment() {
             .observe(viewLifecycleOwner, { info ->
                 if (info != null) {
                     Log.e(TAG,"Currency data is updated")
-                   // Toast.makeText(requireContext(), "Currency data is updated", Toast.LENGTH_LONG).show()
                 }
             })
     }
@@ -220,11 +218,9 @@ class ConverterFragment : Fragment() {
 
     private fun showLoader() = _binding?.apply {
         progrssBar.visibility = View.VISIBLE
-        //_binding.recyclerView.visibility = View.GONE
     }
 
     private fun hideLoader(showRecyclerview: Boolean) = _binding?.apply {
         progrssBar.visibility = View.GONE
-        //_binding.recyclerView.visibility = if (showRecyclerview) View.VISIBLE else View.GONE
     }
 }
